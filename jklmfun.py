@@ -8,7 +8,7 @@ import re
 import random
 from selenium import webdriver
 
-roomCode = "SDUX"
+roomCode = "FFYG"
 
 #Begin bot - create username on JKLM
 
@@ -36,7 +36,7 @@ def LetterManager(bestWord):
 
 def SelectSolvingMethod():
     diceRoll = random.randint(1, 4)
-    diceRoll = 4
+    diceRoll = 1
     if diceRoll == 1:
         print('Best Solution')
         return BestSolution()

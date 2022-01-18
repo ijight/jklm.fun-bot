@@ -16,8 +16,8 @@ def LetterManager(bestWord):
         unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
 
 def SelectSolvingMethod():
-    diceRoll = random.randint(1, 3)
-    diceRoll = 3
+    diceRoll = random.randint(1, 4)
+    diceRoll = 4
     if diceRoll == 1:
         print('Best Solution')
         return BestSolution()
@@ -32,7 +32,10 @@ def SelectSolvingMethod():
             return BestSolution()
         else:
             return x
-    
+    if diceRoll == 4:
+        print('Longest Solution')
+        return LongestSolution()
+
 def Solve(syllablePassed):
     global syll
     syll = syllablePassed
@@ -94,4 +97,16 @@ def DashedSolution():
             temporaryBestSolution = word
     return temporaryBestSolution
 
-print(Solve("JIG"))
+def LongestSolution():
+    longest = ''
+    answers = []
+    for word in wordDictionary:
+        if syll in word:
+            answers.append(word)
+            
+    for x in answers:
+        if len(x) >= len(longest):
+            longest = x 
+    return longest
+
+print(Solve("NE"))

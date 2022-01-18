@@ -6,6 +6,12 @@ from selenium.webdriver.common.keys import Keys
 import time
 import re
 import random
+from selenium import webdriver
+
+roomCode = "SDUX"
+
+#Begin bot - create username on JKLM
+
 
 f = open("dict.txt", "r")
 wordDictionary = f.read()
@@ -15,6 +21,12 @@ wordDictionary = wordDictionary.split("\n")
 syll = ""
 unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
 alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
+
+
+
+
+
+
 def LetterManager(bestWord):
     bestWordLettersList = list(bestWord)
     global unusedLetters
@@ -23,8 +35,8 @@ def LetterManager(bestWord):
         unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
 
 def SelectSolvingMethod():
-    diceRoll = random.randint(1, 3)
-    diceRoll = 3
+    diceRoll = random.randint(1, 4)
+    diceRoll = 4
     if diceRoll == 1:
         print('Best Solution')
         return BestSolution()
@@ -39,7 +51,10 @@ def SelectSolvingMethod():
             return BestSolution()
         else:
             return x
-    
+    if diceRoll == 4:
+        print('Longest Solution')
+        return LongestSolution()
+
 def Solve(syllablePassed):
     global syll
     syll = syllablePassed
@@ -94,28 +109,81 @@ def DashedSolution():
     for word in wordDictionary:
         if syll in word:
             answers.append(word)
-    print(answers)
     temporaryBestSolution = ""
     for word in answers:
         if ('-' in word) and (len(word) >= len(temporaryBestSolution)):
             temporaryBestSolution = word
     return temporaryBestSolution
 
+def LongestSolution():
+    longest = ''
+    answers = []
+    for word in wordDictionary:
+        if syll in word:
+            answers.append(word)
+            
+    for x in answers:
+        if len(x) >= len(longest):
+            longest = x 
+    return longest
+
+print(Solve("NE"))
+
 driver = webdriver.Chrome()
-#.click()
-driver.get("https://jklm.fun/" + 'FNYH')
+driver.get("https://jklm.fun/" + str(roomCode))
 driver.find_element_by_css_selector('button.styled').send_keys(Keys.ENTER)
 WebDriverWait(driver, 30).until(EC.frame_to_be_available_and_switch_to_it((By.TAG_NAME, "iframe")))
 driver.find_element_by_css_selector('body').send_keys(Keys.TAB, Keys.TAB, Keys.ENTER)
 
 def AnswerLikeAHuman():
-    ans = Solve(driver.find_element_by_class_name('syllable').text)
-    ans = list(ans)
-    time.sleep(random.uniform(1, 1.2))
-    for x in ans:
-        driver.find_element_by_css_selector('input.styled').send_keys(x)
-        time.sleep(random.uniform(0.01, 0.25)) 
-    driver.find_element_by_css_selector('input.styled').send_keys(Keys.ENTER)
+    try:
+        ans = Solve(driver.find_element_by_class_name('syllable').text)
+        ans = list(ans)
+        time.sleep(random.uniform(0.2, 1.5))
+        ArtificialTypos(ans)
+        driver.find_element_by_css_selector('input.styled').send_keys(Keys.ENTER)
+    except:
+        print('wtf')
+
+def RollForFuckup():
+    num = random.randint(1, 100)
+    if num > 90:
+        return True
+    else:
+        return False
+
+def FailBlock(block,letterWait):
+    if random.randint(1, 2) == 1:
+        driver.find_element_by_css_selector('input.styled').send_keys(block[0])
+    else:
+        driver.find_element_by_css_selector('input.styled').send_keys(block[1])
+    for letter in block:
+        driver.find_element_by_css_selector('input.styled').send_keys(letter)
+        time.sleep(letterWait) 
+    for unused in range(0,len(block)+1):
+        driver.find_element_by_css_selector('input.styled').send_keys(Keys.BACK_SPACE)
+        time.sleep(0.15) 
+
+
+def ArtificialTypos(ans):
+    ansList = []
+    cnt = 0
+    while len(ans) > cnt:
+        chunkSize = random.randint(3, 6)
+        ansList.append(ans[cnt:cnt+chunkSize])
+        cnt += chunkSize
+    for block in ansList:
+        letterWait = random.uniform(0.02, 0.06)
+        if RollForFuckup():
+                FailBlock(block, letterWait)
+                for letter in block:
+                    driver.find_element_by_css_selector('input.styled').send_keys(letter)
+                    time.sleep(letterWait) 
+        else:
+            for letter in block:
+                driver.find_element_by_css_selector('input.styled').send_keys(letter)
+                time.sleep(letterWait) 
+        time.sleep(random.uniform(0.05, 0.2)) 
 
 def AnswerLikeABot():
     x = Solve(driver.find_element_by_class_name('syllable').text)

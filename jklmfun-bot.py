@@ -8,7 +8,7 @@ import re
 import random
 from selenium import webdriver
 
-roomCode = "FFYG"
+roomCode = "WAXC"
 
 #Begin bot - create username on JKLM
 
@@ -36,7 +36,6 @@ def LetterManager(bestWord):
 
 def SelectSolvingMethod():
     diceRoll = random.randint(1, 4)
-    diceRoll = 1
     if diceRoll == 1:
         print('Best Solution')
         return BestSolution()
@@ -82,7 +81,7 @@ def BestSolution():
         for letter in letters:  #for each letter
             if letter in unusedLetters:
                 wordscore += 1
-                if letter == "Q" or "Z" or "J":
+                if letter == "Q" or "J":
                     wordscore += 1
         if wordscore >= previousBestWordscore:
             temporaryBestSolution = word
@@ -187,6 +186,7 @@ def ArtificialTypos(ans):
 
 def AnswerLikeABot():
     x = Solve(driver.find_element_by_class_name('syllable').text)
+    print(x)
     driver.find_element_by_css_selector('input.styled').send_keys(x, Keys.ENTER)
 
 def ans():

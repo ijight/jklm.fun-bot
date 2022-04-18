@@ -1,14 +1,16 @@
+from ssl import Options
+from tabnanny import check
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
 import time
 import re
 import random
-from selenium import webdriver
 
-roomCode = "WAXC"
+roomCode = "TSSQ"
 
 #Begin bot - create username on JKLM
 
@@ -65,13 +67,19 @@ def Solve(syllablePassed):
     print(unusedLetters)
     return solutionGiven
 
-#Solving Methods
+def CheatSolve(syllablePassed):
+    global syll
+    syll = syllablePassed
+    print(BestSolution(ID="cheat")[:30])
 
-def BestSolution():
+#Solving Methods
+def BestSolution(ID=""):
     answers = []
     for word in wordDictionary:
         if syll in word:
             answers.append(word)
+    if ID == "cheat":
+        return answers
     previousBestWordscore = 0
     temporaryBestSolution = ""
     for word in answers: #for each word
@@ -128,19 +136,20 @@ def LongestSolution():
 
 print(Solve("NE"))
 
-driver = webdriver.Chrome()
+driver = webdriver.Chrome(ChromeDriverManager().install())
 driver.get("https://jklm.fun/" + str(roomCode))
-driver.find_element_by_css_selector('button.styled').send_keys(Keys.ENTER)
+driver.find_element(By.CSS_SELECTOR,'button.styled').send_keys(Keys.ENTER)
 WebDriverWait(driver, 30).until(EC.frame_to_be_available_and_switch_to_it((By.TAG_NAME, "iframe")))
-driver.find_element_by_css_selector('body').send_keys(Keys.TAB, Keys.TAB, Keys.ENTER)
+driver.find_element(By.CSS_SELECTOR,'body').send_keys(Keys.TAB, Keys.TAB, Keys.ENTER)
 
 def AnswerLikeAHuman():
     try:
-        ans = Solve(driver.find_element_by_class_name('syllable').text)
+        ans = Solve(driver.find_element(By.CLASS_NAME, 'syllable').text)
         ans = list(ans)
         time.sleep(random.uniform(0.2, 1.5))
+        #typos are aids
         ArtificialTypos(ans)
-        driver.find_element_by_css_selector('input.styled').send_keys(Keys.ENTER)
+        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(Keys.ENTER)
     except:
         print('wtf')
 
@@ -153,16 +162,15 @@ def RollForFuckup():
 
 def FailBlock(block,letterWait):
     if random.randint(1, 2) == 1:
-        driver.find_element_by_css_selector('input.styled').send_keys(block[0])
+        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(block[0])
     else:
-        driver.find_element_by_css_selector('input.styled').send_keys(block[1])
+        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(block[1])
     for letter in block:
-        driver.find_element_by_css_selector('input.styled').send_keys(letter)
+        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(letter)
         time.sleep(letterWait) 
     for unused in range(0,len(block)+1):
-        driver.find_element_by_css_selector('input.styled').send_keys(Keys.BACK_SPACE)
+        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(Keys.BACK_SPACE)
         time.sleep(0.15) 
-
 
 def ArtificialTypos(ans):
     ansList = []
@@ -176,32 +184,43 @@ def ArtificialTypos(ans):
         if RollForFuckup():
                 FailBlock(block, letterWait)
                 for letter in block:
-                    driver.find_element_by_css_selector('input.styled').send_keys(letter)
+                    driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(letter)
                     time.sleep(letterWait) 
         else:
             for letter in block:
-                driver.find_element_by_css_selector('input.styled').send_keys(letter)
+                driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(letter)
                 time.sleep(letterWait) 
         time.sleep(random.uniform(0.05, 0.2)) 
 
 def AnswerLikeABot():
-    x = Solve(driver.find_element_by_class_name('syllable').text)
+    x = Solve(driver.find_element(By.CLASS_NAME, 'syllable').text)
     print(x)
-    driver.find_element_by_css_selector('input.styled').send_keys(x, Keys.ENTER)
+    driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(x, Keys.ENTER)
+
+#for tracking current turn/only for cheat console
+def CheckPlayer():
+    CheatSolve(driver.find_element(By.CLASS_NAME, 'syllable').text)
+    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
+        True
 
 def ans():
-    while not(driver.find_element_by_css_selector('input.styled').is_displayed()):
-        True
+    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
+        CheckPlayer()
     AnswerLikeAHuman()
-    syllChange(driver.find_element_by_class_name('syllable').text)
-    
+    syllChange(driver.find_element(By.CLASS_NAME, 'syllable').text)
+
+#checks syllable only when turn begins
 def syllChange(x):
-    while x == driver.find_element_by_css_selector('input.styled').is_displayed():
+    while x == driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed():
         True
-    print("SYLLCHANGE SENT TO ANS:", driver.find_element_by_class_name('syllable').text)
+    print("SYLLCHANGE SENT TO ANS:", driver.find_element(By.CLASS_NAME, 'syllable').text)
     ans()
 
-x = driver.find_element_by_class_name('syllable').text
-print("X TO BEGIN WITH:", x)
-syllChange(driver.find_element_by_css_selector('input.styled').is_displayed())
 
+
+
+x = driver.find_element(By.CLASS_NAME, 'syllable').text
+print("X TO BEGIN WITH:", x)
+syllChange(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed())
+
+    

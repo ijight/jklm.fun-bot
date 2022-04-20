@@ -10,10 +10,9 @@ import time
 import re
 import random
 
-roomCode = "TSSQ"
+roomCode = "SDAC"
 
 #Begin bot - create username on JKLM
-
 
 f = open("dict.txt", "r")
 wordDictionary = f.read()
@@ -22,12 +21,7 @@ f.close()
 wordDictionary = wordDictionary.split("\n")
 syll = ""
 unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
-alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
-
-
-
-
-
+alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y']
 
 def LetterManager(bestWord):
     bestWordLettersList = list(bestWord)
@@ -63,7 +57,6 @@ def Solve(syllablePassed):
     wordDictionary.remove(solutionGiven)
     LetterManager(solutionGiven)
     print(solutionGiven)
-    print(alphabet)
     print(unusedLetters)
     return solutionGiven
 
@@ -134,8 +127,6 @@ def LongestSolution():
             longest = x 
     return longest
 
-print(Solve("NE"))
-
 driver = webdriver.Chrome(ChromeDriverManager().install())
 driver.get("https://jklm.fun/" + str(roomCode))
 driver.find_element(By.CSS_SELECTOR,'button.styled').send_keys(Keys.ENTER)
@@ -151,11 +142,11 @@ def AnswerLikeAHuman():
         ArtificialTypos(ans)
         driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(Keys.ENTER)
     except:
-        print('wtf')
+        CheckPlayer()
 
 def RollForFuckup():
     num = random.randint(1, 100)
-    if num > 90:
+    if num > 97:
         return True
     else:
         return False
@@ -197,30 +188,30 @@ def AnswerLikeABot():
     print(x)
     driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(x, Keys.ENTER)
 
+
 #for tracking current turn/only for cheat console
 def CheckPlayer():
     CheatSolve(driver.find_element(By.CLASS_NAME, 'syllable').text)
     while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
-        True
-
+        tempCurrentSyllable = driver.find_element(By.CLASS_NAME, 'syllable').text
+        time.sleep(1.0)
+        if tempCurrentSyllable != driver.find_element(By.CLASS_NAME, 'syllable').text:
+            print(driver.find_element(By.CLASS_NAME, 'syllable').text)
+            CheatSolve(driver.find_element(By.CLASS_NAME, 'syllable').text)
+    print('Player turn Start!')
+    ans()
+   
 def ans():
     while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
         CheckPlayer()
     AnswerLikeAHuman()
-    syllChange(driver.find_element(By.CLASS_NAME, 'syllable').text)
-
-#checks syllable only when turn begins
-def syllChange(x):
-    while x == driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed():
-        True
-    print("SYLLCHANGE SENT TO ANS:", driver.find_element(By.CLASS_NAME, 'syllable').text)
-    ans()
+    time.sleep(1.0)
+    if (driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
+        ans()
+    CheckPlayer()
 
 
 
 
-x = driver.find_element(By.CLASS_NAME, 'syllable').text
-print("X TO BEGIN WITH:", x)
-syllChange(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed())
-
+CheckPlayer()
     

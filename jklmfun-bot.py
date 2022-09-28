@@ -10,7 +10,7 @@ import time
 import re
 import random
 
-roomCode = "SDAC"
+roomCode = "GMVK"
 
 #Begin bot - create username on JKLM
 
@@ -32,6 +32,7 @@ def LetterManager(bestWord):
 
 def SelectSolvingMethod():
     diceRoll = random.randint(1, 4)
+    diceRoll = 1
     if diceRoll == 1:
         print('Best Solution')
         return BestSolution()
@@ -188,30 +189,26 @@ def AnswerLikeABot():
     print(x)
     driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(x, Keys.ENTER)
 
-
 #for tracking current turn/only for cheat console
 def CheckPlayer():
     CheatSolve(driver.find_element(By.CLASS_NAME, 'syllable').text)
-    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
-        tempCurrentSyllable = driver.find_element(By.CLASS_NAME, 'syllable').text
-        time.sleep(1.0)
-        if tempCurrentSyllable != driver.find_element(By.CLASS_NAME, 'syllable').text:
+    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()): #waits until current player's input box is displayed
+        tempCurrentSyllable = driver.find_element(By.CLASS_NAME, 'syllable').text #gets current syllable
+        time.sleep(1.0) 
+        if tempCurrentSyllable != driver.find_element(By.CLASS_NAME, 'syllable').text: #detects if syllable changed, then logs solve if it has
             print(driver.find_element(By.CLASS_NAME, 'syllable').text)
             CheatSolve(driver.find_element(By.CLASS_NAME, 'syllable').text)
     print('Player turn Start!')
-    ans()
+    ans() #loop!
    
 def ans():
-    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
+    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()): #in case of false call
         CheckPlayer()
-    AnswerLikeAHuman()
+    AnswerLikeAHuman() #answer input function
     time.sleep(1.0)
-    if (driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()):
+    if (driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()): #waits to see if solve is valid, if not input box will still be visible
         ans()
-    CheckPlayer()
+    CheckPlayer() #loop!
 
-
-
-
-CheckPlayer()
+CheckPlayer() #begin loop!
     

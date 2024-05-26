@@ -1,214 +1,253 @@
-from ssl import Options
-from tabnanny import check
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchFrameException, ElementNotInteractableException
 import time
 import re
 import random
 
-roomCode = "GMVK"
+#############################
+########## GLOBALS ##########
+#############################
 
-#Begin bot - create username on JKLM
+ROOMCODE = "MHEN"
+MODE = "player"
+LOG_ANSWERS_FOR_OTHERS = True
+ANSWER_LIKE_A_BOT = False
 
-f = open("dict.txt", "r")
-wordDictionary = f.read()
-f.close()
+#############################
+###### INITIALIZATION #######
+#############################
 
-wordDictionary = wordDictionary.split("\n")
-syll = ""
-unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
-alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y']
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 
-def LetterManager(bestWord):
-    bestWordLettersList = list(bestWord)
-    global unusedLetters
-    unusedLetters = (list(set(unusedLetters) - set(bestWordLettersList)))
-    if unusedLetters == []:
-        unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
+chrome_options = Options()
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=chrome_options)
 
-def SelectSolvingMethod():
-    diceRoll = random.randint(1, 4)
-    diceRoll = 1
-    if diceRoll == 1:
-        print('Best Solution')
-        return BestSolution()
-    if diceRoll == 2:
-        print('Shortest Solution')
-        return ShortestSolution()
-    if diceRoll == 3:
-        print('Dashed Solution Attempted')
-        x = DashedSolution()
-        if (x == ""):
-            print('Failed')
-            return BestSolution()
-        else:
-            return x
-    if diceRoll == 4:
-        print('Longest Solution')
-        return LongestSolution()
+driver.get(f"https://jklm.fun/{ROOMCODE}")
+driver.find_element(By.CSS_SELECTOR, 'button.styled').send_keys(Keys.ENTER)
 
-def Solve(syllablePassed):
-    global syll
-    syll = syllablePassed
-    solutionGiven = SelectSolvingMethod()
-    wordDictionary.remove(solutionGiven)
-    LetterManager(solutionGiven)
-    print(solutionGiven)
-    print(unusedLetters)
-    return solutionGiven
+time.sleep(2) # this is 1000% necessary, the game is slow to load the iframe
 
-def CheatSolve(syllablePassed):
-    global syll
-    syll = syllablePassed
-    print(BestSolution(ID="cheat")[:30])
-
-#Solving Methods
-def BestSolution(ID=""):
-    answers = []
-    for word in wordDictionary:
-        if syll in word:
-            answers.append(word)
-    if ID == "cheat":
-        return answers
-    previousBestWordscore = 0
-    temporaryBestSolution = ""
-    for word in answers: #for each word
-        letters = list(set(list(word)))
-        letters 
-        wordscore = 0
-        for letter in letters:  #for each letter
-            if letter in unusedLetters:
-                wordscore += 1
-                if letter == "Q" or "J":
-                    wordscore += 1
-        if wordscore >= previousBestWordscore:
-            temporaryBestSolution = word
-            previousBestWordscore = wordscore
-    return temporaryBestSolution
-
-def ShortestSolution():
-    if syll in wordDictionary:
-        return syll
-    else:
-        answers = []
-        for word in wordDictionary:
-            if syll in word:
-                answers.append(word)
-        for word in answers:
-            previousShortest = 10
-            wordLength = len(word)
-            if wordLength <= previousShortest:
-                temporaryBestSolution = word
-        return temporaryBestSolution
-
-def DashedSolution():
-    answers = []
-    for word in wordDictionary:
-        if syll in word:
-            answers.append(word)
-    temporaryBestSolution = ""
-    for word in answers:
-        if ('-' in word) and (len(word) >= len(temporaryBestSolution)):
-            temporaryBestSolution = word
-    return temporaryBestSolution
-
-def LongestSolution():
-    longest = ''
-    answers = []
-    for word in wordDictionary:
-        if syll in word:
-            answers.append(word)
-            
-    for x in answers:
-        if len(x) >= len(longest):
-            longest = x 
-    return longest
-
-driver = webdriver.Chrome(ChromeDriverManager().install())
-driver.get("https://jklm.fun/" + str(roomCode))
-driver.find_element(By.CSS_SELECTOR,'button.styled').send_keys(Keys.ENTER)
-WebDriverWait(driver, 30).until(EC.frame_to_be_available_and_switch_to_it((By.TAG_NAME, "iframe")))
-driver.find_element(By.CSS_SELECTOR,'body').send_keys(Keys.TAB, Keys.TAB, Keys.ENTER)
-
-def AnswerLikeAHuman():
+# WebDriverWait(driver, 60).until(EC.frame_to_be_available_and_switch_to_it((By.TAG_NAME, "iframe"))) this is broken
+frameNotLoaded = True
+while frameNotLoaded:
     try:
-        ans = Solve(driver.find_element(By.CLASS_NAME, 'syllable').text)
-        ans = list(ans)
-        time.sleep(random.uniform(0.2, 1.5))
-        #typos are aids
-        ArtificialTypos(ans)
-        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(Keys.ENTER)
-    except:
-        CheckPlayer()
+        driver.switch_to.frame(driver.find_element(By.TAG_NAME, "iframe"))
+        frameNotLoaded = False
+    except NoSuchFrameException:
+        frameNotLoaded = True
 
-def RollForFuckup():
-    num = random.randint(1, 100)
-    if num > 97:
-        return True
-    else:
-        return False
+#############################
 
-def FailBlock(block,letterWait):
+def FailBlock(block, letterWait):
     if random.randint(1, 2) == 1:
-        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(block[0])
+        driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(block[0])
     else:
-        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(block[1])
+        driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(block[1])
     for letter in block:
-        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(letter)
-        time.sleep(letterWait) 
-    for unused in range(0,len(block)+1):
-        driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(Keys.BACK_SPACE)
-        time.sleep(0.15) 
+        driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(letter)
+        time.sleep(letterWait)
+    for _ in range(len(block) + 1):
+        driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(Keys.BACK_SPACE)
+        time.sleep(0.15)
 
 def ArtificialTypos(ans):
     ansList = []
     cnt = 0
     while len(ans) > cnt:
         chunkSize = random.randint(3, 6)
-        ansList.append(ans[cnt:cnt+chunkSize])
+        ansList.append(ans[cnt:cnt + chunkSize])
         cnt += chunkSize
     for block in ansList:
         letterWait = random.uniform(0.02, 0.06)
-        if RollForFuckup():
-                FailBlock(block, letterWait)
-                for letter in block:
-                    driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(letter)
-                    time.sleep(letterWait) 
+        if random.randint(1, 100) > 97:
+            FailBlock(block, letterWait)
+            for letter in block:
+                driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(letter)
+                time.sleep(letterWait)
         else:
             for letter in block:
-                driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(letter)
-                time.sleep(letterWait) 
-        time.sleep(random.uniform(0.05, 0.2)) 
+                driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(letter)
+                time.sleep(letterWait)
+        time.sleep(random.uniform(0.05, 0.2))
 
-def AnswerLikeABot():
-    x = Solve(driver.find_element(By.CLASS_NAME, 'syllable').text)
-    print(x)
-    driver.find_element(By.CSS_SELECTOR,'input.styled').send_keys(x, Keys.ENTER)
+def SelectSolvingMethod(dictionary, unusedLetters, syllablePassed):
+    diceRoll = random.randint(1, 4)
+    diceRoll = 1
+    if diceRoll == 1:
+        print('Best Solution')
+        return BestSolution(dictionary, unusedLetters, syllablePassed)
+    if diceRoll == 2:
+        print('Shortest Solution')
+        return ShortestSolution(dictionary, unusedLetters, syllablePassed)
+    if diceRoll == 3:
+        print('Dashed Solution Attempted')
+        x = DashedSolution(dictionary, unusedLetters, syllablePassed)
+        if not x:
+            print('Failed')
+            return BestSolution(dictionary, unusedLetters, syllablePassed)
+        else:
+            return x
+    if diceRoll == 4:
+        print('Longest Solution')
+        return LongestSolution(dictionary, unusedLetters, syllablePassed)
 
-#for tracking current turn/only for cheat console
-def CheckPlayer():
-    CheatSolve(driver.find_element(By.CLASS_NAME, 'syllable').text)
-    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()): #waits until current player's input box is displayed
-        tempCurrentSyllable = driver.find_element(By.CLASS_NAME, 'syllable').text #gets current syllable
-        time.sleep(1.0) 
-        if tempCurrentSyllable != driver.find_element(By.CLASS_NAME, 'syllable').text: #detects if syllable changed, then logs solve if it has
-            print(driver.find_element(By.CLASS_NAME, 'syllable').text)
-            CheatSolve(driver.find_element(By.CLASS_NAME, 'syllable').text)
-    print('Player turn Start!')
-    ans() #loop!
-   
-def ans():
-    while not(driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()): #in case of false call
-        CheckPlayer()
-    AnswerLikeAHuman() #answer input function
-    time.sleep(1.0)
-    if (driver.find_element(By.CSS_SELECTOR,'input.styled').is_displayed()): #waits to see if solve is valid, if not input box will still be visible
-        ans()
-    CheckPlayer() #loop!
+def CheatSolve(dictionary, unusedLetters, syllablePassed):
+    print(BestSolution(dictionary, unusedLetters, syllablePassed, type="list")[:30])
 
-CheckPlayer() #begin loop!
+def BestSolution(dictionary, unusedLetters, syll, type="string"):
+    answers = [word for word in dictionary if syll in word]
+    if type == "list": # Return a list of all possible answers
+        return answers
     
+    previousBestWordscore = 0
+    temporaryBestSolution = ""
+    for word in answers:
+        letters = list(set(word))
+        wordscore = sum(1 for letter in letters if letter in unusedLetters)
+        wordscore += sum(1 for letter in letters if letter in ['Q', 'J'])
+        if wordscore >= previousBestWordscore:
+            temporaryBestSolution = word
+            previousBestWordscore = wordscore
+
+    return temporaryBestSolution 
+
+def ShortestSolution(dictionary, syll):
+    answers = [word for word in dictionary if syll in word]
+    return min(answers, key=len, default=syll)
+
+def DashedSolution(dictionary, syll):
+    answers = [word for word in dictionary if syll in word]
+    return max((word for word in answers if '-' in word), key=len, default="")
+
+def LongestSolution(dictionary, syll):
+    answers = [word for word in dictionary if syll in word]
+    return max(answers, key=len, default="")
+
+class GameStateManager:
+    def __init__(self):
+        self.unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
+        self.alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
+
+        # Load the word dictionary
+        with open("jklm.fun-bot/dict.txt", "r") as f:
+            wordDictionary = f.read().split("\n")
+        self.dictionary = wordDictionary
+
+    def removeLetters(self, bestWord):
+        for letter in bestWord:
+            if letter in self.unusedLetters:
+                self.unusedLetters.remove(letter)
+
+    def addLetters(self, word):
+        for letter in word:
+            if letter not in self.alphabet:
+                self.alphabet.append(letter)
+            if letter not in self.unusedLetters:
+                self.unusedLetters.append(letter)
+
+    def removeWord(self, word):
+        if word in self.dictionary:
+            self.dictionary.remove(word)
+
+    def addWord(self, word):
+        if word not in self.dictionary:
+            self.dictionary.append(word)
+
+    def reset(self):
+        self.unusedLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z']
+        with open("jklm.fun-bot/dict.txt", "r") as f:
+            wordDictionary = f.read().split("\n")
+        self.dictionary = wordDictionary
+
+def findAnswerAndSubmit(gameState, bot_mode=False):
+    syllable = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text
+    solve = SelectSolvingMethod(gameState.dictionary, gameState.unusedLetters, syllable)
+    gameState.removeWord(solve)
+    gameState.removeLetters(solve)
+
+    if bot_mode:
+        time.sleep(0.1)
+        driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(solve)
+    else:
+        time.sleep(random.uniform(0.2, 0.6))
+        ArtificialTypos(list(solve))
+    
+    driver.find_element(By.CSS_SELECTOR, 'input.styled').send_keys(Keys.ENTER)
+    
+    if not driver.find_element(By.CSS_SELECTOR, 'input.styled').is_displayed():
+        gameState.addWord(solve)
+        gameState.addLetters(solve)
+
+class Logger:
+    def __init__(self, silent = []):
+        self.silent = silent
+    
+    def log(self, source, message):
+        if source == None:
+            print(message)
+
+        if source not in self.silent:
+            print(message)
+            self.silent.append(source)
+
+    def unsilence(self, source):
+        if source in self.silent:
+            self.silent.remove(source)
+
+log = Logger()
+gameState = GameStateManager()
+
+if MODE == "player":
+    while True:
+        join_button = WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.CLASS_NAME, 'joinRound')))
+        print("Joining game")
+        join_button.click()
+
+        game_ongoing = True
+
+        while game_ongoing:
+            log.log("game_loop", "Game loop started")
+            agent_is_current_player = driver.find_element(By.CSS_SELECTOR, 'input.styled').is_displayed()
+            current_syllable = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text
+        
+            while not agent_is_current_player and game_ongoing:
+                log.log("current_player_loop", "Agent is not the current player")
+                past_syllable = current_syllable
+                current_syllable = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text
+
+                if LOG_ANSWERS_FOR_OTHERS and past_syllable != current_syllable:
+                    CheatSolve(gameState.dictionary, gameState.unusedLetters, WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text)
+                    time.sleep(1.0)
+
+                agent_is_current_player = driver.find_element(By.CSS_SELECTOR, 'input.styled').is_displayed()
+                time.sleep(0.5)
+                game_ongoing =  not(join_button.is_displayed())
+
+            log.unsilence("current_player_loop")
+            log.log(None, "Agent is the current player")
+
+            log.log(None, "Attempted to answer")
+            try:
+                findAnswerAndSubmit(gameState, bot_mode = ANSWER_LIKE_A_BOT) # This is the main function that finds the answer and submits it
+            except ElementNotInteractableException:
+                log.log(None, "Failed to answer, probably because the game ended")
+
+            time.sleep(0.2)
+            agent_is_current_player = driver.find_element(By.CSS_SELECTOR, 'input.styled').is_displayed()
+            
+            game_ongoing = not(join_button.is_displayed())
+
+        log.log("game_loop", "Game has ended")
+        gameState.reset()
+        time.sleep(2)
+
+if MODE == "monitor":
+    while True:
+        game_start = True

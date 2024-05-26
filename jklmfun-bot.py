@@ -13,8 +13,8 @@ import random
 ########## GLOBALS ##########
 #############################
 
-ROOMCODE = "MHEN"
-MODE = "player"
+ROOMCODE = "CGDJ"
+MODE = "monitor" # "player" or "monitor"
 LOG_ANSWERS_FOR_OTHERS = True
 ANSWER_LIKE_A_BOT = False
 
@@ -77,57 +77,79 @@ def ArtificialTypos(ans):
                 time.sleep(letterWait)
         time.sleep(random.uniform(0.05, 0.2))
 
-def SelectSolvingMethod(dictionary, unusedLetters, syllablePassed):
+def selectSolvingMethod(dictionary, unusedLetters, syllablePassed):
     diceRoll = random.randint(1, 4)
     diceRoll = 1
     if diceRoll == 1:
         print('Best Solution')
-        return BestSolution(dictionary, unusedLetters, syllablePassed)
+        return bestSolution(dictionary, unusedLetters, syllablePassed)
     if diceRoll == 2:
         print('Shortest Solution')
-        return ShortestSolution(dictionary, unusedLetters, syllablePassed)
+        return shortestSolution(dictionary, unusedLetters, syllablePassed)
     if diceRoll == 3:
         print('Dashed Solution Attempted')
-        x = DashedSolution(dictionary, unusedLetters, syllablePassed)
+        x = dashedSolution(dictionary, unusedLetters, syllablePassed)
         if not x:
             print('Failed')
-            return BestSolution(dictionary, unusedLetters, syllablePassed)
+            return bestSolution(dictionary, unusedLetters, syllablePassed)
         else:
             return x
     if diceRoll == 4:
         print('Longest Solution')
-        return LongestSolution(dictionary, unusedLetters, syllablePassed)
+        return longestSolution(dictionary, unusedLetters, syllablePassed)
 
-def CheatSolve(dictionary, unusedLetters, syllablePassed):
-    print(BestSolution(dictionary, unusedLetters, syllablePassed, type="list")[:30])
+def cheatSolve(dictionary, unusedLetters, syllablePassed):
+    return bestSolution(dictionary, unusedLetters, syllablePassed, type="list", level="tiered")
 
-def BestSolution(dictionary, unusedLetters, syll, type="string"):
+from collections import defaultdict
+
+def seperateIntoTiers(answers, tier="length"):
+    if tier == "length":
+        length_dict = defaultdict(list)
+        for word in answers:
+            length_dict[len(word)].append(word)
+        result = {length: words[:5] for length, words in length_dict.items()}
+        return result
+
+def bestSolution(dictionary, unusedLetters, syll, type="string", level="best"):
+    unused_letters_set = set(unusedLetters)
+    high_value_letters = {'Q', 'J'}
+    
     answers = [word for word in dictionary if syll in word]
-    if type == "list": # Return a list of all possible answers
+    
+    if type == "list":
+        if level == "best":
+            return answers[:30]
+        
+        if level == "tiered":
+            return seperateIntoTiers(answers, tier="length")
+        
         return answers
     
-    previousBestWordscore = 0
-    temporaryBestSolution = ""
-    for word in answers:
-        letters = list(set(word))
-        wordscore = sum(1 for letter in letters if letter in unusedLetters)
-        wordscore += sum(1 for letter in letters if letter in ['Q', 'J'])
-        if wordscore >= previousBestWordscore:
-            temporaryBestSolution = word
-            previousBestWordscore = wordscore
+    def word_score(word):
+        unique_letters = set(word)
+        score = sum(1 for letter in unique_letters if letter in unused_letters_set)
+        score += sum(1 for letter in unique_letters if letter in high_value_letters)
+        return score
+    
+    best_solution = max(answers, key=word_score, default="")
+    
+    return best_solution
 
-    return temporaryBestSolution 
-
-def ShortestSolution(dictionary, syll):
+def shortestSolution(dictionary, syll):
     answers = [word for word in dictionary if syll in word]
     return min(answers, key=len, default=syll)
 
-def DashedSolution(dictionary, syll):
+def dashedSolution(dictionary, syll):
     answers = [word for word in dictionary if syll in word]
     return max((word for word in answers if '-' in word), key=len, default="")
 
-def LongestSolution(dictionary, syll):
+def longestSolution(dictionary, syll):
     answers = [word for word in dictionary if syll in word]
+    return max(answers, key=len, default="")
+
+def specificLetterSolution(dictionary, syll, letter):
+    answers = [word for word in dictionary if syll in word and letter in word]
     return max(answers, key=len, default="")
 
 class GameStateManager:
@@ -138,6 +160,8 @@ class GameStateManager:
         # Load the word dictionary
         with open("jklm.fun-bot/dict.txt", "r") as f:
             wordDictionary = f.read().split("\n")
+
+        self.unalteredDictionary = wordDictionary
         self.dictionary = wordDictionary
 
     def removeLetters(self, bestWord):
@@ -168,7 +192,7 @@ class GameStateManager:
 
 def findAnswerAndSubmit(gameState, bot_mode=False):
     syllable = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text
-    solve = SelectSolvingMethod(gameState.dictionary, gameState.unusedLetters, syllable)
+    solve = selectSolvingMethod(gameState.dictionary, gameState.unusedLetters, syllable)
     gameState.removeWord(solve)
     gameState.removeLetters(solve)
 
@@ -223,7 +247,7 @@ if MODE == "player":
                 current_syllable = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text
 
                 if LOG_ANSWERS_FOR_OTHERS and past_syllable != current_syllable:
-                    CheatSolve(gameState.dictionary, gameState.unusedLetters, WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text)
+                    print(cheatSolve(gameState.dictionary, gameState.unusedLetters, WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text))
                     time.sleep(1.0)
 
                 agent_is_current_player = driver.find_element(By.CSS_SELECTOR, 'input.styled').is_displayed()
@@ -248,6 +272,43 @@ if MODE == "player":
         gameState.reset()
         time.sleep(2)
 
+from window import start_tkinter_window
+import asyncio
+
 if MODE == "monitor":
+    label_queue, loop = start_tkinter_window()
+
+    past_syllable = ""
     while True:
-        game_start = True
+        join_button = None
+        try:
+            join_button = driver.find_element(By.CLASS_NAME, 'joinRound')
+        except:
+            driver.refresh()
+            clickable_element = WebDriverWait(driver, 100).until(
+                EC.element_to_be_clickable(driver.find_element(By.CSS_SELECTOR, 'button.styled')))
+                
+        print("Joining game")
+
+        game_ongoing = True
+
+        while game_ongoing:
+            current_syllable = WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, 'syllable'))).text
+
+            if past_syllable != current_syllable:
+                solutions = cheatSolve(gameState.unalteredDictionary, gameState.alphabet, current_syllable)
+                if isinstance(solutions, dict):
+                    sorted_keys = sorted(solutions.keys())
+                    solutions = "\n".join([f"""{key}: {str(solutions[key]).replace('[', '').replace(']', '').replace("'", '').replace(',', ' ')}""" for key in sorted_keys])
+
+                elif type(solutions) == list:
+                    solutions = str(solutions).replace("[", "").replace("]", "").replace("'", "").replace(",", " ")
+                content = f"Syllable: {current_syllable}\n{str(solutions)}"
+                asyncio.run_coroutine_threadsafe(label_queue.put(content), loop)
+                time.sleep(1.0)
+            
+            past_syllable = current_syllable
+            game_ongoing = not(join_button.is_displayed())
+
+        print("Game has ended")
+        time.sleep(2)
